@@ -1,31 +1,38 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const EmailQuerySchema = new mongoose.Schema({
+const EmailQuery = sequelize.define('EmailQuery', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     name: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     email: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, isEmail: true }
     },
     subject: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     message: {
-        type: String,
-        required: true
+        type: DataTypes.TEXT,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     status: {
-        type: String,
-        enum: ['Pending', 'Resolved'],
-        default: 'Pending'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.ENUM('Pending', 'Resolved'),
+        defaultValue: 'Pending'
     }
+}, {
+    timestamps: true // Adds createdAt and updatedAt
 });
 
-module.exports = mongoose.model('EmailQuery', EmailQuerySchema);
+module.exports = EmailQuery;

@@ -1,81 +1,85 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const WebsiteSettingSchema = new mongoose.Schema({
-    siteName: { type: String },
-    logoUrl: { type: String },
-    faviconUrl: { type: String },
-    footerText: { type: String }
-});
+const WebsiteSetting = sequelize.define('WebsiteSetting', {
+    siteName: DataTypes.STRING,
+    logoUrl: DataTypes.STRING,
+    faviconUrl: DataTypes.STRING,
+    footerText: DataTypes.STRING
+}, { timestamps: true });
 
-const HeaderSettingSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    subtitle: { type: String },
-    description: { type: String },
-    backgroundImage: { type: String }, // URL or path
-    buttonText: { type: String },
-    buttonLink: { type: String },
-    showButton: { type: Boolean, default: true }
-});
+const HeaderSetting = sequelize.define('HeaderSetting', {
+    title: { type: DataTypes.STRING, allowNull: false },
+    subtitle: DataTypes.STRING,
+    description: DataTypes.TEXT,
+    backgroundImage: DataTypes.STRING, // URL or path
+    buttonText: DataTypes.STRING,
+    buttonLink: DataTypes.STRING,
+    showButton: { type: DataTypes.BOOLEAN, defaultValue: true }
+}, { timestamps: true });
 
-const AboutSettingSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: { type: String },
-    mission: { type: String },
-    vision: { type: String }
-});
+const AboutSetting = sequelize.define('AboutSetting', {
+    title: { type: DataTypes.STRING, allowNull: false },
+    description: DataTypes.TEXT,
+    mission: DataTypes.TEXT,
+    vision: DataTypes.TEXT
+}, { timestamps: true });
 
-const TestimonialSchema = new mongoose.Schema({
-    clientName: { type: String, required: true },
-    feedback: { type: String, required: true },
-    rating: { type: Number, min: 1, max: 5 },
-    clientImage: { type: String }
-});
+const Testimonial = sequelize.define('Testimonial', {
+    clientName: { type: DataTypes.STRING, allowNull: false },
+    feedback: { type: DataTypes.TEXT, allowNull: false },
+    rating: {
+        type: DataTypes.INTEGER,
+        validate: { min: 1, max: 5 }
+    },
+    clientImage: DataTypes.STRING
+}, { timestamps: true });
 
-const FeatureSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    icon: { type: String }
-});
+const Feature = sequelize.define('Feature', {
+    title: { type: DataTypes.STRING, allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: false },
+    icon: DataTypes.STRING
+}, { timestamps: true });
 
-const PricingSchema = new mongoose.Schema({
-    planName: { type: String, required: true },
-    price: { type: Number, required: true },
-    features: [String],
-    isPopular: { type: Boolean, default: false }
-});
+const Pricing = sequelize.define('Pricing', {
+    planName: { type: DataTypes.STRING, allowNull: false },
+    price: { type: DataTypes.FLOAT, allowNull: false },
+    features: DataTypes.JSON, // PostgreSQL supports JSON out of the box
+    isPopular: { type: DataTypes.BOOLEAN, defaultValue: false }
+}, { timestamps: true });
 
-const FAQSchema = new mongoose.Schema({
-    question: { type: String, required: true },
-    answer: { type: String, required: true },
-    status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' }
-});
+const FAQ = sequelize.define('FAQ', {
+    question: { type: DataTypes.STRING, allowNull: false },
+    answer: { type: DataTypes.TEXT, allowNull: false },
+    status: { type: DataTypes.ENUM('Active', 'Inactive'), defaultValue: 'Active' }
+}, { timestamps: true });
 
-const ContactSettingSchema = new mongoose.Schema({
-    address: { type: String },
-    email: { type: String },
-    phone: { type: String },
-    mapUrl: { type: String },
-    facebook: { type: String },
-    twitter: { type: String },
-    linkedin: { type: String },
-    instagram: { type: String }
-});
+const ContactSetting = sequelize.define('ContactSetting', {
+    address: DataTypes.STRING,
+    email: DataTypes.STRING,
+    phone: DataTypes.STRING,
+    mapUrl: DataTypes.TEXT,
+    facebook: DataTypes.STRING,
+    twitter: DataTypes.STRING,
+    linkedin: DataTypes.STRING,
+    instagram: DataTypes.STRING
+}, { timestamps: true });
 
-const SEOSettingSchema = new mongoose.Schema({
-    metaTitle: { type: String },
-    metaDescription: { type: String },
-    metaKeywords: { type: String },
-    googleAnalyticsId: { type: String }
-});
+const SEOSetting = sequelize.define('SEOSetting', {
+    metaTitle: DataTypes.STRING,
+    metaDescription: DataTypes.TEXT,
+    metaKeywords: DataTypes.TEXT,
+    googleAnalyticsId: DataTypes.STRING
+}, { timestamps: true });
 
 module.exports = {
-    WebsiteSetting: mongoose.model('WebsiteSetting', WebsiteSettingSchema),
-    HeaderSetting: mongoose.model('HeaderSetting', HeaderSettingSchema),
-    AboutSetting: mongoose.model('AboutSetting', AboutSettingSchema),
-    Testimonial: mongoose.model('Testimonial', TestimonialSchema),
-    Feature: mongoose.model('Feature', FeatureSchema),
-    Pricing: mongoose.model('Pricing', PricingSchema),
-    FAQ: mongoose.model('FAQ', FAQSchema),
-    ContactSetting: mongoose.model('ContactSetting', ContactSettingSchema),
-    SEOSetting: mongoose.model('SEOSetting', SEOSettingSchema),
+    WebsiteSetting,
+    HeaderSetting,
+    AboutSetting,
+    Testimonial,
+    Feature,
+    Pricing,
+    FAQ,
+    ContactSetting,
+    SEOSetting
 };

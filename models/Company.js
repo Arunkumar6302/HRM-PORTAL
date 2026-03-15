@@ -1,33 +1,42 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const CompanySchema = new mongoose.Schema({
+const Company = sequelize.define('Company', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     name: {
-        type: String,
-        required: [true, 'Please add a company name'],
-        trim: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            notNull: { msg: 'Please add a company name' },
+            notEmpty: { msg: 'Please add a company name' }
+        }
     },
     email: {
-        type: String,
-        required: [true, 'Please add a contact email'],
+        type: DataTypes.STRING,
+        allowNull: false,
         unique: true,
-        match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-            'Please add a valid email'
-        ]
+        validate: {
+            notNull: { msg: 'Please add a contact email' },
+            isEmail: { msg: 'Please add a valid email' }
+        }
     },
     location: {
-        type: String,
-        required: [true, 'Please add a location']
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            notNull: { msg: 'Please add a location' }
+        }
     },
     status: {
-        type: String,
-        enum: ['Active', 'Pending', 'Inactive'],
-        default: 'Pending'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.ENUM('Active', 'Pending', 'Inactive'),
+        defaultValue: 'Pending'
     }
+}, {
+    timestamps: true // Adds createdAt and updatedAt
 });
 
-module.exports = mongoose.model('Company', CompanySchema);
+module.exports = Company;

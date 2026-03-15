@@ -1,33 +1,55 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const Company = require('./Company');
+const Subscription = require('./Subscription');
 
-const TransactionSchema = new mongoose.Schema({
-    company: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'Company',
-        required: true
+const Transaction = sequelize.define('Transaction', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
     },
-    subscription: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'Subscription',
-        required: true
+    companyId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: Company,
+            key: 'id'
+        }
+    },
+    subscriptionId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: Subscription,
+            key: 'id'
+        }
     },
     amount: {
-        type: Number,
-        required: true
+        type: DataTypes.FLOAT,
+        allowNull: false
     },
     currency: {
-        type: String,
-        default: 'USD'
+        type: DataTypes.STRING,
+        defaultValue: 'USD'
     },
     status: {
-        type: String,
-        enum: ['Success', 'Pending', 'Failed'],
-        default: 'Success'
+        type: DataTypes.ENUM('Success', 'Pending', 'Failed'),
+        defaultValue: 'Success'
     },
     transactionDate: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     }
+}, {
+    timestamps: true // Adds createdAt and updatedAt
 });
 
-module.exports = mongoose.model('Transaction', TransactionSchema);
+// Setup relationships
+Company.hasMany(Transaction, { foreignKey: 'companyId' });
+Transaction.belongsTo(Company, { foreignKey: 'companyId' });
+
+Subscription.hasMany(Transaction, { foreignKey: 'subscriptionId' });
+Transaction.belongsTo(Subscription, { foreignKey: 'subscriptionId' });
+
+module.exports = Transaction;

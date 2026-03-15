@@ -2,13 +2,25 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
-const connectDB = require('./config/db');
+const { connectDB, sequelize } = require('./config/db');
 
 // Load env vars
 dotenv.config();
 
 // Connect to database
 connectDB();
+
+// Initialize all models and their associations
+require('./models');
+
+// Sync models
+sequelize.sync({ alter: true })
+    .then(() => {
+        console.log('Database synced successfully');
+    })
+    .catch((err) => {
+        console.error('Failed to sync database:', err);
+    });
 
 const app = express();
 

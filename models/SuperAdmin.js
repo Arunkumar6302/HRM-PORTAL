@@ -1,49 +1,64 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { sequelize } = require('../config/db');
 
-const SuperAdminSchema = new mongoose.Schema({
+const SuperAdmin = sequelize.define('SuperAdmin', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     name: {
-        type: String,
-        required: [true, 'Please add a name']
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            notNull: { msg: 'Please add a name' },
+            notEmpty: { msg: 'Please add a name' }
+        }
     },
     email: {
-        type: String,
-        required: [true, 'Please add an email'],
+        type: DataTypes.STRING,
+        allowNull: false,
         unique: true,
-        match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-            'Please add a valid email'
-        ]
+        validate: {
+            notNull: { msg: 'Please add an email' },
+            isEmail: { msg: 'Please add a valid email' }
+        }
     },
     role: {
-        type: String,
-        enum: ['Super Admin', 'Admin', 'Company Admin'],
-        default: 'Super Admin'
+        type: DataTypes.ENUM('Super Admin', 'Admin', 'Company Admin'),
+        defaultValue: 'Super Admin'
     },
     password: {
-        type: String,
-        required: [true, 'Please add a password'],
-        minlength: 6,
-        select: false
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            notNull: { msg: 'Please add a password' },
+            len: [6, 100] // password length at least 6
+        }
+        // To exclude from queries by default, in Sequelize we often exclude it in the controller or use a scope
     }
-});
-
-// Encrypt password using bcrypt
-SuperAdminSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) {
-        next();
+}, {
+    timestamps: true, // adds createdAt and updatedAt
+    hooks: {
+        beforeCreate: async (admin) => {
+            if (admin.password) {
+                const salt = await bcrypt.genSalt(10);
+                admin.password = await bcrypt.hash(admin.password, salt);
+            }
+        },
+        beforeUpdate: async (admin) => {
+            if (admin.changed('password')) {
+                const salt = await bcrypt.genSalt(10);
+                admin.password = await bcrypt.hash(admin.password, salt);
+            }
+        }
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Match user entered password to hashed password in database
-SuperAdminSchema.methods.matchPassword = async function(enteredPassword) {
+SuperAdmin.prototype.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('SuperAdmin', SuperAdminSchema);
+module.exports = SuperAdmin;

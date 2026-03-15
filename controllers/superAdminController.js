@@ -2,14 +2,14 @@ const SuperAdmin = require('../models/SuperAdmin');
 const jwt = require('jsonwebtoken');
 
 const sendTokenResponse = (user, statusCode, res) => {
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
         expiresIn: '30d'
     });
 
     res.status(statusCode).json({
         success: true,
         token,
-        user: { id: user._id, name: user.name, email: user.email, role: user.role }
+        user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
 };
 
@@ -23,7 +23,7 @@ exports.login = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Please provide email and password' });
         }
 
-        const user = await SuperAdmin.findOne({ email }).select('+password');
+        const user = await SuperAdmin.findOne({ where: { email } });
 
         if (!user) {
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
@@ -57,7 +57,7 @@ exports.register = async (req, res) => {
 // @route   GET /api/v1/auth/users
 exports.getUsers = async (req, res) => {
     try {
-        const users = await SuperAdmin.find({});
+        const users = await SuperAdmin.findAll();
         res.status(200).json({ success: true, count: users.length, data: users });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -68,7 +68,7 @@ exports.getUsers = async (req, res) => {
 // @route   DELETE /api/v1/auth/users/:id
 exports.deleteUser = async (req, res) => {
     try {
-        await SuperAdmin.findByIdAndDelete(req.params.id);
+        await SuperAdmin.destroy({ where: { id: req.params.id } });
         res.status(200).json({ success: true, data: {} });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });

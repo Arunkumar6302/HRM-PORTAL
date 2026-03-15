@@ -1,35 +1,43 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const OfflineRequestSchema = new mongoose.Schema({
+const OfflineRequest = sequelize.define('OfflineRequest', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     companyName: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     contactPerson: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     email: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, isEmail: true }
     },
     phone: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     details: {
-        type: String,
-        required: true
+        type: DataTypes.TEXT,
+        allowNull: false,
+        validate: { notNull: true, notEmpty: true }
     },
     status: {
-        type: String,
-        enum: ['Pending', 'In Progress', 'Completed', 'Rejected'],
-        default: 'Pending'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.ENUM('Pending', 'In Progress', 'Completed', 'Rejected'),
+        defaultValue: 'Pending'
     }
+}, {
+    timestamps: true // Adds createdAt and updatedAt
 });
 
-module.exports = mongoose.model('OfflineRequest', OfflineRequestSchema);
+module.exports = OfflineRequest;

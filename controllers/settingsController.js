@@ -25,7 +25,7 @@ exports.updateHeaderSettings = async (req, res) => {
         }
 
         if (settings) {
-            settings = await HeaderSetting.findByIdAndUpdate(settings._id, updateData, { new: true, runValidators: true });
+            await settings.update(updateData);
         } else {
             settings = await HeaderSetting.create(updateData);
         }
@@ -50,7 +50,7 @@ exports.updateAboutSettings = async (req, res) => {
     try {
         let settings = await AboutSetting.findOne();
         if (settings) {
-            settings = await AboutSetting.findByIdAndUpdate(settings._id, req.body, { new: true, runValidators: true });
+            await settings.update(req.body);
         } else {
             settings = await AboutSetting.create(req.body);
         }
@@ -74,7 +74,7 @@ exports.updateContactSettings = async (req, res) => {
     try {
         let settings = await ContactSetting.findOne();
         if (settings) {
-            settings = await ContactSetting.findByIdAndUpdate(settings._id, req.body, { new: true, runValidators: true });
+            await settings.update(req.body);
         } else {
             settings = await ContactSetting.create(req.body);
         }
@@ -87,7 +87,7 @@ exports.updateContactSettings = async (req, res) => {
 // --- Features ---
 exports.getFeatures = async (req, res) => {
     try {
-        const features = await Feature.find();
+        const features = await Feature.findAll();
         res.status(200).json({ success: true, data: features });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -105,8 +105,9 @@ exports.createFeature = async (req, res) => {
 
 exports.updateFeature = async (req, res) => {
     try {
-        const feature = await Feature.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const feature = await Feature.findByPk(req.params.id);
         if (!feature) return res.status(404).json({ success: false, error: 'Not found' });
+        await feature.update(req.body);
         res.status(200).json({ success: true, data: feature });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -115,8 +116,9 @@ exports.updateFeature = async (req, res) => {
 
 exports.deleteFeature = async (req, res) => {
     try {
-        const feature = await Feature.findByIdAndDelete(req.params.id);
+        const feature = await Feature.findByPk(req.params.id);
         if (!feature) return res.status(404).json({ success: false, error: 'Not found' });
+        await feature.destroy();
         res.status(200).json({ success: true, data: {} });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -126,7 +128,7 @@ exports.deleteFeature = async (req, res) => {
 // --- Pricing ---
 exports.getPricings = async (req, res) => {
     try {
-        const pricings = await Pricing.find();
+        const pricings = await Pricing.findAll();
         res.status(200).json({ success: true, data: pricings });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -144,8 +146,9 @@ exports.createPricing = async (req, res) => {
 
 exports.updatePricing = async (req, res) => {
     try {
-        const pricing = await Pricing.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const pricing = await Pricing.findByPk(req.params.id);
         if (!pricing) return res.status(404).json({ success: false, error: 'Not found' });
+        await pricing.update(req.body);
         res.status(200).json({ success: true, data: pricing });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -154,8 +157,9 @@ exports.updatePricing = async (req, res) => {
 
 exports.deletePricing = async (req, res) => {
     try {
-        const pricing = await Pricing.findByIdAndDelete(req.params.id);
+        const pricing = await Pricing.findByPk(req.params.id);
         if (!pricing) return res.status(404).json({ success: false, error: 'Not found' });
+        await pricing.destroy();
         res.status(200).json({ success: true, data: {} });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });

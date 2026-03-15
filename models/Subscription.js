@@ -1,32 +1,46 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const Company = require('./Company');
 
-const SubscriptionSchema = new mongoose.Schema({
-    company: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'Company',
-        required: true
+const Subscription = sequelize.define('Subscription', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    // The foreign key is usually defined automatically by associations, 
+    // but we can explicitly define it if needed. We'll set up associations later, 
+    // or we can define companyId here.
+    companyId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: Company,
+            key: 'id'
+        }
     },
     planName: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false
     },
     startDate: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     },
     endDate: {
-        type: Date,
-        required: true
+        type: DataTypes.DATE,
+        allowNull: false
     },
     status: {
-        type: String,
-        enum: ['Active', 'Expired', 'Cancelled'],
-        default: 'Active'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        type: DataTypes.ENUM('Active', 'Expired', 'Cancelled'),
+        defaultValue: 'Active'
     }
+}, {
+    timestamps: true // Adds createdAt and updatedAt
 });
 
-module.exports = mongoose.model('Subscription', SubscriptionSchema);
+// Setup relationships
+Company.hasMany(Subscription, { foreignKey: 'companyId' });
+Subscription.belongsTo(Company, { foreignKey: 'companyId' });
+
+module.exports = Subscription;
