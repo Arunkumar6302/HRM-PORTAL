@@ -576,6 +576,7 @@ exports.updateChatResponse = async (req, res) => {
         }
 
         // Send Email Notification
+        let emailSent = false;
         try {
             if (chat.userId && chat.userId.includes('@')) {
                 let userName = chat.userId.split('@')[0];
@@ -594,14 +595,28 @@ exports.updateChatResponse = async (req, res) => {
                     responseMessage: response
                 });
                 console.log(`[Chat] Email sent successfully to ${chat.userId}`);
-                return res.status(200).json({ success: true, data: chat, emailSent: true });
+                emailSent = true;
             }
         } catch (emailErr) {
             console.error('[Chat] Failed to send email (Edit):', emailErr);
-            return res.status(200).json({ success: true, data: chat, emailSent: false, error: emailErr.message || 'Email delivery failed' });
         }
 
-        res.status(200).json({ success: true, data: chat });
+        // 🚀 SEND GLOBAL NOTIFICATION
+        console.log('🚀 About to call sendGlobalNotification (Edit)...');
+        try {
+            await sendGlobalNotification({
+                senderRole: 'admin',
+                senderEmail: 'admin@shnoor.com',
+                message: response,
+                type: 'admin_response',
+                recipientEmails: [chat.userId]
+            });
+            console.log('✅ Global notification sent for admin response edit');
+        } catch (globalNotifyErr) {
+            console.error('❌ Failed to send global notification (Edit):', globalNotifyErr);
+        }
+
+        res.status(200).json({ success: true, data: chat, emailSent });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -704,6 +719,7 @@ exports.sendAdminReply = async (req, res) => {
         }
 
         // Send Email Notification
+        let emailSent = false;
         try {
             if (session_id && session_id.includes('@')) {
                 let userName = session_id.split('@')[0];
@@ -729,11 +745,10 @@ exports.sendAdminReply = async (req, res) => {
                     responseMessage: content
                 });
                 console.log(`[Chat] Email sent successfully to ${session_id}`);
-                return res.status(200).json({ success: true, data: msg, emailSent: true });
+                emailSent = true;
             }
         } catch (emailErr) {
             console.error('[Chat] Failed to send email notification (Reply):', emailErr);
-            return res.status(200).json({ success: true, data: msg, emailSent: false, error: emailErr.message || 'Email delivery failed' });
         }
 
         // 🚀 SEND GLOBAL NOTIFICATION TO ALL CONNECTED USERS
@@ -751,7 +766,7 @@ exports.sendAdminReply = async (req, res) => {
             console.error('❌ Failed to send global notification:', globalNotifyErr);
         }
 
-        res.status(200).json({ success: true, data: msg });
+        res.status(200).json({ success: true, data: msg, emailSent });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

@@ -49,6 +49,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         'nav-superadmin':   { title: 'Super Admin Management',   sub: 'Manage platform administrators',         view: 'view-superadmin' },
     };
 
+    // Show Password Toggle for Add Admin Form
+    document.getElementById('show-admin-password')?.addEventListener('change', function() {
+        const pwdInput = document.getElementById('admin-password-input');
+        if (pwdInput) pwdInput.type = this.checked ? 'text' : 'password';
+    });
+
     const pageTitle   = document.getElementById('page-title');
     const allLinks    = document.querySelectorAll('.sidebar-link');
 

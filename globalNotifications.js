@@ -33,7 +33,7 @@ class GlobalNotificationClient {
                            sessionStorage.getItem('shnoor_email') || 
                            'anonymous@user.com';
             
-            this.userRole = this.inferRoleFromEmail(this.userEmail);
+            this.userRole = sessionStorage.getItem('shnoor_user_role') || this.inferRoleFromEmail(this.userEmail);
 
             // Connect to socket.io
             this.socket = io('/', {
@@ -79,6 +79,23 @@ class GlobalNotificationClient {
     // Handle incoming global notification
     handleGlobalNotification(data) {
         console.log('Received global notification:', data);
+
+        const { recipientEmails, senderRole, type } = data;
+        
+        // RECIPIENT FILTERING:
+        // 1. If it's a specific message (has recipientEmails)
+        // 2. And we are not the recipient
+        // 3. Skip visual notification (but store it if we are that recipient)
+        if (recipientEmails && recipientEmails.length > 0) {
+            const isMe = recipientEmails.some(email => 
+                email.toLowerCase() === this.userEmail.toLowerCase()
+            );
+            
+            if (!isMe) {
+                console.log('Skipping notification - not intended for this user');
+                return;
+            }
+        }
 
         // Store in queue for later if user is not logged in
         if (!this.isUserLoggedIn()) {

@@ -248,6 +248,62 @@ function showNotificationDetails(redirectData) {
 // Call redirect handler on page load
 handleLoginRedirect();
 
+// ── Forgot Password Logic ──
+const forgotLink = document.getElementById('forgot-password-link');
+const forgotModal = document.getElementById('forgot-password-modal');
+const forgotForm = document.getElementById('forgot-password-form');
+const forgotError = document.getElementById('forgot-error');
+const forgotSuccess = document.getElementById('forgot-success');
+const closeForgot = document.getElementById('close-forgot-modal');
+
+forgotLink?.addEventListener('click', (e) => {
+  e.preventDefault();
+  forgotModal.style.display = 'block';
+  forgotError.style.display = 'none';
+  forgotSuccess.style.display = 'none';
+});
+
+closeForgot?.addEventListener('click', () => {
+  forgotModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === forgotModal) forgotModal.style.display = 'none';
+});
+
+forgotForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('forgot-email').value.trim();
+  const submitBtn = document.getElementById('forgot-submit');
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+  forgotError.style.display = 'none';
+  forgotSuccess.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/v1/auth/forgotpassword', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      forgotSuccess.style.display = 'block';
+      forgotForm.reset();
+    } else {
+      forgotError.textContent = data.error || 'Email could not be sent.';
+      forgotError.style.display = 'block';
+    }
+  } catch (err) {
+    forgotError.textContent = 'Network error. Please try again.';
+    forgotError.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send Reset Link';
+  }
+});
+
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email    = document.getElementById('login-email').value.trim();
@@ -268,6 +324,7 @@ loginForm?.addEventListener('submit', async (e) => {
       sessionStorage.setItem('shnoor_admin', 'true');
       sessionStorage.setItem('shnoor_token', data.token);
       sessionStorage.setItem('shnoor_admin_email', data.user.email);
+      sessionStorage.setItem('shnoor_user_role', data.user.role);
       
       // Handle post-login redirect
       handlePostLoginRedirect(data.user.role);
@@ -337,3 +394,9 @@ window.addEventListener('scroll', () => {
   links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + current));
 });
 
+
+// ── Show Password Logic ──
+document.getElementById('show-login-password')?.addEventListener('change', function() {
+  const pwdInput = document.getElementById('login-password');
+  if (pwdInput) pwdInput.type = this.checked ? 'text' : 'password';
+});
