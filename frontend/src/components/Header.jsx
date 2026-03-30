@@ -4,16 +4,30 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 const Header = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [logoUrl, setLogoUrl] = React.useState('/logo.avif');
 
   React.useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname, location.hash]);
 
+  React.useEffect(() => {
+    let active = true;
+    import('../services/settingsService').then(({ getWebsiteSettings }) => {
+       getWebsiteSettings().then(res => {
+         if (active && res.success && res.data?.logoUrl) {
+            setLogoUrl(res.data.logoUrl);
+         }
+       }).catch(() => {});
+    });
+    return () => { active = false; };
+  }, []);
+
   return (
     <>
       <header className="navbar">
         <div className="nav-container">
-          <Link to="/" className="logo" aria-label="Shnoor Home">
+          <Link to="/" className="logo" aria-label="Shnoor Home" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src={logoUrl} alt="Company Logo" style={{ height: '48px', objectFit: 'contain' }} />
             shnoor
           </Link>
 
@@ -46,16 +60,7 @@ const Header = () => {
           </nav>
 
           <div className="nav-right">
-            <div className="lang-wrap" aria-label="Language selector">
-              <span style={{ fontWeight: 700, color: 'var(--text-light)' }}>Lang</span>
-              <select id="lang" defaultValue="en" aria-label="Language">
-                <option value="en">EN</option>
-                <option value="ar">AR</option>
-                <option value="fr">FR</option>
-                <option value="ur">UR</option>
-              </select>
-            </div>
-            <Link to="/register" className="btn btn-outline">
+            <Link to="/register" className="btn btn-outline" style={{ marginLeft: 'auto' }}>
               Register
             </Link>
             <Link to="/login" className="btn btn-solid">

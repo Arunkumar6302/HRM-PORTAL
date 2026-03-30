@@ -33,7 +33,7 @@ class GlobalNotificationClient {
                            sessionStorage.getItem('shnoor_email') || 
                            'anonymous@user.com';
             
-            this.userRole = sessionStorage.getItem('shnoor_user_role') || this.inferRoleFromEmail(this.userEmail);
+            this.userRole = sessionStorage.getItem('shnoor_role') || this.inferRoleFromEmail(this.userEmail);
 
             // Connect to socket.io
             this.socket = io('/', {

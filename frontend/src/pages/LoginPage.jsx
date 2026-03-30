@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MainLayout from '../components/MainLayout';
 import { login as loginRequest } from '../services/authService';
+import api from '../services/api';
+import { useSiteLogo } from '../hooks/useSiteLogo';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -9,6 +11,13 @@ const LoginPage = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState(() => new URLSearchParams(window.location.search).get('email') || '');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const logoUrl = useSiteLogo();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -33,6 +42,8 @@ const LoginPage = () => {
           sessionStorage.removeItem('shnoor_admin_email');
           localStorage.removeItem('shnoor_admin_email');
         }
+
+        window.dispatchEvent(new Event('auth-changed'));
 
         try {
           if (window.globalNotificationClient) {
@@ -61,46 +72,67 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+    setForgotLoading(true);
+    try {
+      const { data } = await api.post('/api/v1/auth/forgotpassword', {
+        email: forgotEmail.trim(),
+      });
+      if (data?.success) {
+        setForgotSuccess('Reset email sent. Please check your inbox.');
+      } else {
+        setForgotError(data?.error || 'Email could not be sent.');
+      }
+    } catch (err) {
+      const message = err?.response?.data?.error || 'Network error. Please try again.';
+      setForgotError(message);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <MainLayout>
-      <section className="section" id="login" style={{ minHeight: 'calc(100vh - 120px)', display: 'flex', alignItems: 'center' }}>
-        <div className="container center">
-          <div className="auth-card animate-fade-up" style={{ margin: '0 auto' }}>
-            <div className="auth-logo-wrap">
-              <span className="auth-brand">shnoor</span>
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+        <div className="login-card-modern">
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <img src={logoUrl} alt="Company Logo" style={{ height: '56px', objectFit: 'contain' }} />
+          </div>
+          
+          <h2 className="auth-heading">Welcome back</h2>
+          <p className="auth-sub-text">Please enter your details to sign in.</p>
+          
+          {loginError && (
+            <div className="login-error" style={{ marginBottom: '24px' }}>
+              {loginError}
             </div>
-            <h2 className="auth-heading">Welcome back</h2>
-            <p className="auth-sub-text">Sign in to your account</p>
-            {loginError && (
-              <div className="login-error" style={{ display: 'block' }}>
-                {loginError}
-              </div>
-            )}
-            <form id="login-form" onSubmit={handleLogin} noValidate>
-              <div className="form-group">
-                <label htmlFor="login-email">Email</label>
+          )}
+
+          <form onSubmit={handleLogin} noValidate>
+            <div className="form-group">
+              <label htmlFor="login-email">Email Address</label>
+              <input
+                type="email"
+                id="login-email"
+                placeholder="name@company.com"
+                required
+                value={loginEmail}
+                onChange={(e) => {
+                  setLoginEmail(e.target.value);
+                  setLoginError('');
+                }}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="login-password">Password</label>
                 <input
-                  type="email"
-                  id="login-email"
-                  name="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => {
-                    setLoginEmail(e.target.value);
-                    setLoginError('');
-                  }}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="login-password">Password</label>
-                <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="login-password"
-                  name="password"
                   placeholder="••••••••"
-                  autoComplete="current-password"
                   required
                   value={loginPassword}
                   onChange={(e) => {
@@ -109,27 +141,121 @@ const LoginPage = () => {
                   }}
                 />
               </div>
-              <div className="auth-row" style={{ marginBottom: 20 }}>
-                <label className="checkbox-label">
-                  <input type="checkbox" id="remember-me" /> Remember me
+
+              <div className="form-group mb" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  id="show-pwd"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                  style={{ width: 'auto', transform: 'scale(1.1)' }}
+                />
+                <label htmlFor="show-pwd" style={{ margin: 0, fontSize: '0.85rem', cursor: 'pointer', color: '#64748b' }}>
+                  Show Password
                 </label>
-                <Link to="/forgot" className="link-small">
-                  Forgot password?
-                </Link>
               </div>
-              <button type="submit" className="btn btn-solid btn-block" id="login-submit" disabled={loginLoading}>
-                {loginLoading ? 'Signing in...' : 'Sign In'}
+
+            <div className="auth-row">
+              <label className="checkbox-label">
+                <input type="checkbox" id="remember-me" /> Remember for 30 days
+              </label>
+              <button
+                type="button"
+                className="link-small"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                onClick={() => {
+                  setForgotOpen(true);
+                  setForgotEmail(loginEmail || localStorage.getItem('hrm_last_email') || '');
+                  setForgotError('');
+                  setForgotSuccess('');
+                }}
+              >
+                Forgot password?
               </button>
-            </form>
-            <p className="auth-foot-text">
-              Do not have an account?{' '}
-              <Link to="/register" className="link-small">
-                Register
-              </Link>
-            </p>
-          </div>
+            </div>
+
+            <button type="submit" className="btn btn-solid btn-block" disabled={loginLoading}>
+              {loginLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <p className="auth-foot-text" style={{ marginTop: '32px' }}>
+            Don't have an account? {' '}
+            <Link to="/register" className="link-small">
+              Register now
+            </Link>
+          </p>
         </div>
-      </section>
+
+        {forgotOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.5)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setForgotOpen(false);
+            }}
+          >
+            <div className="login-card-modern" style={{ maxWidth: 460, width: '100%' }}>
+              <h3 className="auth-heading" style={{ marginBottom: 8 }}>Forgot Password</h3>
+              <p className="auth-sub-text" style={{ marginBottom: 20 }}>
+                Enter your account email to receive a reset link.
+              </p>
+
+              {forgotError && <div className="login-error" style={{ marginBottom: 12 }}>{forgotError}</div>}
+              {forgotSuccess && (
+                <div
+                  style={{
+                    marginBottom: 12,
+                    border: '1px solid #bbf7d0',
+                    background: '#f0fdf4',
+                    color: '#166534',
+                    fontSize: '0.9rem',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                  }}
+                >
+                  {forgotSuccess}
+                </div>
+              )}
+
+              <form onSubmit={handleForgotPassword}>
+                <div className="form-group">
+                  <label htmlFor="forgot-email">Email Address</label>
+                  <input
+                    id="forgot-email"
+                    type="email"
+                    required
+                    placeholder="name@company.com"
+                    value={forgotEmail}
+                    onChange={(e) => {
+                      setForgotEmail(e.target.value);
+                      setForgotError('');
+                      setForgotSuccess('');
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                  <button type="button" className="btn btn-outline btn-block" onClick={() => setForgotOpen(false)}>
+                    Close
+                  </button>
+                  <button type="submit" className="btn btn-solid btn-block" disabled={forgotLoading}>
+                    {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     </MainLayout>
   );
 };

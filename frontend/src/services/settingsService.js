@@ -1,5 +1,15 @@
 import api from './api';
 
+export const getWebsiteSettings = async () => {
+  const { data } = await api.get('/api/v1/settings/website');
+  return data;
+};
+
+export const updateWebsiteSettings = async (payload) => {
+  const { data } = await api.put('/api/v1/settings/website', payload);
+  return data;
+};
+
 export const getHeaderSettings = async () => {
   const { data } = await api.get('/api/v1/settings/header');
   return data;

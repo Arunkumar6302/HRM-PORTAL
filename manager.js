@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    window.companyLogoUrl = '/logo.avif';
+    fetch('/api/v1/settings/website').then(r=>r.json()).then(d => { if(d.success && d.data?.logoUrl) window.companyLogoUrl = d.data.logoUrl; }).catch(()=>console.error('Logo failed'));
+    
     const token = sessionStorage.getItem('shnoor_token');
     if (!token) {
         window.location.href = 'index.html#login';
@@ -737,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         element.innerHTML = `
             <div style="text-align: left; margin-bottom: 30px;">
-                <img id="pdf-logo" src="logo.avif" alt="SHNOOR Logo" style="max-height: 80px;">
+                <img id="pdf-logo" src="${window.companyLogoUrl}" alt="SHNOOR Logo" style="max-height: 80px;">
             </div>
             <div style="text-align: center; font-size: 16px; font-weight: bold; text-decoration: underline; margin-bottom: 30px; text-transform: uppercase;">
                 ${item.title}
@@ -810,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('preview-letter-title').textContent = 'Letter Preview';
         document.getElementById('preview-letter-body').innerHTML = `
             <div style="text-align: left; margin-bottom: 30px;">
-                <img src="/logo.avif" alt="Logo" style="max-height: 80px;">
+                <img src="${window.companyLogoUrl}" alt="Logo" style="max-height: 80px;">
             </div>
             
             <div style="text-align: center; font-size: 18px; font-weight: bold; text-decoration: underline; margin-bottom: 30px; text-transform: uppercase;">

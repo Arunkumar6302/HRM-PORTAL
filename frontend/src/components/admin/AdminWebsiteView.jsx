@@ -9,12 +9,16 @@ import {
   getFeatures,
   getHeaderSettings,
   getPricing,
+  getWebsiteSettings,
   updateAboutSettings,
   updateContactSettings,
   updateHeaderSettings,
+  updateWebsiteSettings,
 } from '../../services/settingsService';
 
 const AdminWebsiteView = () => {
+  const [websiteForm, setWebsiteForm] = useState({ logoUrl: null });
+  const [logoPreview, setLogoPreview] = useState('');
   const [headerForm, setHeaderForm] = useState({
     title: '',
     subtitle: '',
@@ -42,13 +46,17 @@ const AdminWebsiteView = () => {
 
   const loadSettings = async () => {
     try {
-      const [headerRes, aboutRes, contactRes, featureRes, pricingRes] = await Promise.allSettled([
+      const [websiteRes, headerRes, aboutRes, contactRes, featureRes, pricingRes] = await Promise.allSettled([
+        getWebsiteSettings(),
         getHeaderSettings(),
         getAboutSettings(),
         getContactSettings(),
         getFeatures(),
         getPricing(),
       ]);
+      if (websiteRes.status === 'fulfilled' && websiteRes.value?.success && websiteRes.value?.data) {
+        setLogoPreview(websiteRes.value.data.logoUrl || '');
+      }
       if (headerRes.status === 'fulfilled' && headerRes.value?.success && headerRes.value?.data) {
         const data = headerRes.value.data;
         setHeaderForm((prev) => ({
@@ -82,6 +90,21 @@ const AdminWebsiteView = () => {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  const handleWebsiteSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    if (websiteForm.logoUrl) formData.append('logoUrl', websiteForm.logoUrl);
+    try {
+      const res = await updateWebsiteSettings(formData);
+      if (res.success) {
+        alert('Company Logo saved successfully!');
+        setLogoPreview(res.data?.logoUrl || logoPreview);
+      }
+    } catch (err) {
+      alert(err?.response?.data?.error || 'Failed to save company logo.');
+    }
+  };
 
   const handleHeaderSubmit = async (e) => {
     e.preventDefault();
@@ -159,6 +182,27 @@ const AdminWebsiteView = () => {
       </div>
 
       <div className="panel">
+        <div className="panel-head">
+          <div className="panel-title">Company Logo</div>
+        </div>
+        <div className="panel-body">
+          <form onSubmit={handleWebsiteSubmit}>
+            <label className="form-label">Upload New Logo</label>
+            <input className="input" type="file" onChange={(e) => setWebsiteForm({ logoUrl: e.target.files?.[0] || null })} />
+            {logoPreview && (
+              <div style={{ marginTop: 10, marginBottom: 16 }}>
+                 <p className="form-label">Current Logo:</p>
+                 <img src={logoPreview} alt="Company Logo" style={{ maxHeight: 60, borderRadius: 4, background: '#f1f5f9', padding: '8px' }} />
+              </div>
+            )}
+            <button type="submit" className="btn btn-solid" style={{ marginTop: 10 }}>
+              Save Company Logo
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div className="panel mt">
         <div className="panel-head">
           <div className="panel-title">Header Settings</div>
         </div>

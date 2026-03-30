@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MainLayout from '../components/MainLayout';
-import { registerAdmin } from '../services/authService';
+import { registerPublic } from '../services/authService';
+import { useSiteLogo } from '../hooks/useSiteLogo';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [registerError, setRegisterError] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
+  const logoUrl = useSiteLogo();
   
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    showPasswords: false,
     role: 'Employee'
   });
 
@@ -32,7 +35,7 @@ const RegisterPage = () => {
 
     setRegisterLoading(true);
     try {
-      const data = await registerAdmin({
+      const data = await registerPublic({
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -58,7 +61,7 @@ const RegisterPage = () => {
         <div className="container center">
           <div className="auth-card animate-fade-up" style={{ margin: '0 auto' }}>
             <div className="auth-logo-wrap">
-              <span className="auth-brand">shnoor</span>
+              <img src={logoUrl} alt="Company Logo" style={{ height: '48px', objectFit: 'contain' }} />
             </div>
             <h2 className="auth-heading">Create an account</h2>
             <p className="auth-sub-text">Join us today to manage your workforce</p>
@@ -97,7 +100,7 @@ const RegisterPage = () => {
                 <div style={{ flex: 1 }}>
                   <label htmlFor="register-password">Password</label>
                   <input
-                    type="password"
+                    type={formData.showPasswords ? 'text' : 'password'}
                     id="register-password"
                     name="password"
                     placeholder="••••••••"
@@ -109,7 +112,7 @@ const RegisterPage = () => {
                 <div style={{ flex: 1 }}>
                   <label htmlFor="register-confirm">Confirm Password</label>
                   <input
-                    type="password"
+                    type={formData.showPasswords ? 'text' : 'password'}
                     id="register-confirm"
                     name="confirmPassword"
                     placeholder="••••••••"
@@ -130,8 +133,19 @@ const RegisterPage = () => {
                 >
                   <option value="Employee">Employee</option>
                   <option value="Manager">Manager</option>
-                  <option value="Admin">Admin</option>
                 </select>
+              </div>
+              <div className="form-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '-10px', marginBottom: '16px' }}>
+                <input
+                  type="checkbox"
+                  id="reg-show-pwd"
+                  checked={formData.showPasswords}
+                  onChange={(e) => setFormData({ ...formData, showPasswords: e.target.checked })}
+                  style={{ width: 'auto' }}
+                />
+                <label htmlFor="reg-show-pwd" style={{ margin: 0, fontSize: '0.85rem', cursor: 'pointer', color: '#64748b' }}>
+                  Show Passwords
+                </label>
               </div>
               <button type="submit" className="btn btn-solid btn-block" id="register-submit" disabled={registerLoading}>
                 {registerLoading ? 'Creating Account...' : 'Register'}

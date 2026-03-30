@@ -11,6 +11,37 @@ exports.getHeaderSettings = async (req, res) => {
     }
 };
 
+// @desc    Get Website Settings
+// @route   GET /api/v1/settings/website
+exports.getWebsiteSettings = async (req, res) => {
+    try {
+        const settings = await WebsiteSetting.findOne();
+        res.status(200).json({ success: true, data: settings || {} });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Update Website Settings
+// @route   PUT /api/v1/settings/website
+exports.updateWebsiteSettings = async (req, res) => {
+    try {
+        let settings = await WebsiteSetting.findOne();
+        const updateData = { ...req.body };
+        if (req.file) {
+            updateData.logoUrl = `/uploads/${req.file.filename}`;
+        }
+        if (settings) {
+            await settings.update(updateData);
+        } else {
+            settings = await WebsiteSetting.create(updateData);
+        }
+        res.status(200).json({ success: true, data: settings });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 // @desc    Update Header Settings
 // @route   PUT /api/v1/settings/header
 exports.updateHeaderSettings = async (req, res) => {

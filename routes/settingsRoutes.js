@@ -1,6 +1,7 @@
 const express = require('express');
 const { 
     getHeaderSettings, updateHeaderSettings,
+    getWebsiteSettings, updateWebsiteSettings,
     getAboutSettings, updateAboutSettings,
     getContactSettings, updateContactSettings,
     getFeatures, createFeature, updateFeature, deleteFeature,
@@ -10,6 +11,9 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
 const router = express.Router();
+
+router.get('/website', getWebsiteSettings);
+router.put('/website', protect, upload.single('logoUrl'), updateWebsiteSettings);
 
 router.get('/header', getHeaderSettings);
 router.put('/header', protect, upload.single('backgroundImage'), updateHeaderSettings);

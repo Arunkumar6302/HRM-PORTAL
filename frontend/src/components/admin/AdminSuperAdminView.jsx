@@ -4,7 +4,7 @@ import { deleteAdmin, getAdmins, registerAdmin } from '../../services/authServic
 const AdminSuperAdminView = () => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Super Admin' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Super Admin', showPassword: false });
 
   const loadAdmins = async () => {
     setLoading(true);
@@ -24,7 +24,7 @@ const AdminSuperAdminView = () => {
     e.preventDefault();
     try {
       await registerAdmin(form);
-      setForm({ name: '', email: '', password: '', role: 'Super Admin' });
+      setForm({ name: '', email: '', password: '', role: 'Super Admin', showPassword: false });
       loadAdmins();
     } catch (err) {
       alert(err?.response?.data?.error || 'Failed to create admin.');
@@ -49,7 +49,19 @@ const AdminSuperAdminView = () => {
               <label className="form-label">Email</label>
               <input className="input" type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} required />
               <label className="form-label">Password</label>
-              <input className="input" type="password" value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} required />
+              <input className="input" type={form.showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} required />
+              <div className="form-group mb" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input
+                  type="checkbox"
+                  id="admin-show-pwd"
+                  checked={form.showPassword}
+                  onChange={(e) => setForm((prev) => ({ ...prev, showPassword: e.target.checked }))}
+                  style={{ width: 'auto' }}
+                />
+                <label htmlFor="admin-show-pwd" style={{ margin: 0, fontSize: '0.8rem', cursor: 'pointer', color: '#64748b' }}>
+                  Show Password
+                </label>
+              </div>
               <label className="form-label">Role</label>
               <select className="input" value={form.role} onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}>
                 <option value="Super Admin">Super Admin</option>
