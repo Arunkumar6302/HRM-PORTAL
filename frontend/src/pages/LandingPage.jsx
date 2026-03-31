@@ -91,13 +91,13 @@ const LandingPage = () => {
               {header.description}
             </p>
           )}
-          <div className="btn-row animate-fade-up delay-300" id="hero-btn-row" style={{ display: header.showButton ? 'flex' : 'none' }}>
-            <Link to="/register" className="btn btn-solid" id="hero-btn">
-              {header.buttonText || 'Discover More'}
+          <div className="btn-row animate-fade-up delay-300" id="hero-btn-row" style={{ display: header.showButton ? 'flex' : 'none', flexWrap: 'wrap', justifyContent: 'center', gap: 16 }}>
+            <Link to="/register/admin" className="btn btn-solid" id="hero-btn-admin" style={{ padding: '12px 24px', minWidth: 200 }}>
+              Get Started as Admin
             </Link>
-            <a href="#features" className="btn btn-outline" id="hero-btn-secondary">
-              Explore Features
-            </a>
+            <Link to="/register/manager" className="btn btn-outline" id="hero-btn-manager" style={{ padding: '12px 24px', minWidth: 200, backgroundColor: '#fff' }}>
+              Start Manager Trial
+            </Link>
           </div>
           <div
             className="hero-visual animate-fade-in delay-400"

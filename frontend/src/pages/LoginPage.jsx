@@ -34,6 +34,15 @@ const LoginPage = () => {
         localStorage.setItem('shnoor_role', data.user.role);
         localStorage.setItem('shnoor_email', data.user.email);
         localStorage.setItem('hrm_last_email', data.user.email);
+        
+        if (data.user.trial_start_date) {
+          sessionStorage.setItem('shnoor_trial_start', data.user.trial_start_date);
+          localStorage.setItem('shnoor_trial_start', data.user.trial_start_date);
+        }
+        if (data.user.trial_end_date) {
+          sessionStorage.setItem('shnoor_trial_end', data.user.trial_end_date);
+          localStorage.setItem('shnoor_trial_end', data.user.trial_end_date);
+        }
 
         if (data.user.role === 'Admin' || data.user.role === 'Super Admin') {
           sessionStorage.setItem('shnoor_admin_email', data.user.email);

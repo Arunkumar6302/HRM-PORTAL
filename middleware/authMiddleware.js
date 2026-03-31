@@ -40,3 +40,18 @@ exports.authorize = (...roles) => {
         next();
     };
 };
+
+exports.trialCheck = (req, res, next) => {
+    // Only Managers have trials to check
+    if (req.user && req.user.role === 'Manager') {
+        const trialEndDate = req.user.trial_end_date;
+        if (trialEndDate && new Date(trialEndDate) < new Date()) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Your 15-day trial has expired. Please upgrade your plan to restore full access to manager features.',
+                trial_expired: true 
+            });
+        }
+    }
+    next();
+};

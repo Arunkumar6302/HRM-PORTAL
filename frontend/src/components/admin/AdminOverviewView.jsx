@@ -212,8 +212,90 @@ const AdminOverviewView = () => {
                </tbody>
             </table>
          </div>
+      {/* 5. Manager Management & Trial Monitoring (New) */}
+      <div className="panel" style={{ marginBottom: '24px' }}>
+         <div className="panel-head">
+            <div className="panel-title">Manager Management & Trial Monitoring</div>
+         </div>
+         <div className="table-wrap" style={{ maxHeight: 400, overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+               <thead style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 1 }}>
+                  <tr>
+                     <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>Manager Details</th>
+                     <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>Registration Date</th>
+                     <th style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>Trial Period</th>
+                     <th style={{ padding: '12px 16px', textAlign: 'right', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>Status</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {data.admins.filter(a => a.role === 'Manager').length > 0 ? data.admins.filter(a => a.role === 'Manager').map((m, idx) => {
+                     const regDate = m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'N/A';
+                     const trialStart = m.trial_start_date ? new Date(m.trial_start_date).toLocaleDateString() : 'N/A';
+                     const trialEnd = m.trial_end_date ? new Date(m.trial_end_date).toLocaleDateString() : 'N/A';
+                     
+                     let daysLeft = 0;
+                     let status = 'No Trial';
+                     let statusColor = '#64748b';
+                     
+                     if (m.trial_end_date) {
+                        const end = new Date(m.trial_end_date);
+                        const now = new Date();
+                        const diff = end - now;
+                        daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                        
+                        if (daysLeft <= 0) {
+                           status = 'Expired';
+                           statusColor = '#ef4444';
+                           daysLeft = 0;
+                        } else if (daysLeft <= 3) {
+                           status = 'Expiring Soon';
+                           statusColor = '#f59e0b';
+                        } else {
+                           status = 'Active Trial';
+                           statusColor = '#10b981';
+                        }
+                     }
+
+                     return (
+                        <tr key={m.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                           <td style={{ padding: '12px 16px' }}>
+                              <div style={{ fontWeight: 600, color: '#0f172a' }}>{m.name || 'Manager'}</div>
+                              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{m.email}</div>
+                           </td>
+                           <td style={{ padding: '12px 16px', color: '#475569', fontSize: '0.9rem' }}>
+                              {regDate}
+                           </td>
+                           <td style={{ padding: '12px 16px' }}>
+                              <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 500 }}>{trialStart} - {trialEnd}</div>
+                              {m.trial_end_date && (
+                                 <div style={{ fontSize: '0.75rem', color: statusColor, fontWeight: 700 }}>
+                                    {daysLeft} Days Remaining
+                                 </div>
+                              )}
+                           </td>
+                           <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                              <span style={{ 
+                                 background: `${statusColor}15`, 
+                                 color: statusColor, 
+                                 padding: '4px 10px', 
+                                 borderRadius: 12, 
+                                 fontSize: '0.8rem', 
+                                 fontWeight: 700 
+                              }}>
+                                 {status}
+                              </span>
+                           </td>
+                        </tr>
+                     );
+                  }) : (
+                     <tr><td colSpan="4" style={{ padding: 16, textAlign: 'center', color: '#64748b' }}>No managers registered yet.</td></tr>
+                  )}
+               </tbody>
+            </table>
+         </div>
       </div>
 
+      </div>
     </div>
   );
 };

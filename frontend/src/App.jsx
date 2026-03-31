@@ -6,11 +6,14 @@ import ContactPage from './pages/ContactPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsAndConditionsPage from './pages/TermsAndConditionsPage';
+import AdminRegisterPage from './pages/AdminRegisterPage';
+import ManagerRegisterPage from './pages/ManagerRegisterPage';
 import './index.css';
+import GlobalNotificationListener from './components/common/GlobalNotificationListener.jsx';
 
 import ChatbotApp from './components/chatbot/ChatbotApp.jsx';
-import GlobalNotificationListener from './components/common/GlobalNotificationListener.jsx';
 
 function App() {
   return (
@@ -20,11 +23,14 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register/admin" element={<AdminRegisterPage />} />
+        <Route path="/register/manager" element={<ManagerRegisterPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/manager" element={<ManagerDashboard />} />
         <Route path="/employee" element={<EmployeeDashboard />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ChatbotApp />

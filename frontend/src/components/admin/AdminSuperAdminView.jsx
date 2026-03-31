@@ -66,6 +66,7 @@ const AdminSuperAdminView = () => {
               <select className="input" value={form.role} onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}>
                 <option value="Super Admin">Super Admin</option>
                 <option value="Admin">Admin</option>
+                <option value="Manager">Manager</option>
               </select>
               <button type="submit" className="btn btn-solid" style={{ width: '100%' }}>
                 Create Admin

@@ -1,165 +1,77 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import MainLayout from '../components/MainLayout';
-import { registerPublic } from '../services/authService';
-import { useSiteLogo } from '../hooks/useSiteLogo';
 
 const RegisterPage = () => {
-  const navigate = useNavigate();
-  const [registerError, setRegisterError] = useState('');
-  const [registerLoading, setRegisterLoading] = useState(false);
-  const logoUrl = useSiteLogo();
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    showPasswords: false,
-    role: 'Employee'
-  });
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setRegisterError('');
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setRegisterError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setRegisterError('Passwords do not match.');
-      return;
-    }
-
-    setRegisterLoading(true);
-    try {
-      const data = await registerPublic({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role
-      });
-      
-      if (data.success) {
-        navigate('/login');
-      } else {
-        setRegisterError(data.error || data.message || 'Registration failed. Please try again.');
-      }
-    } catch (err) {
-      const message = err?.response?.data?.error || 'Network error. Please try again.';
-      setRegisterError(message);
-    } finally {
-      setRegisterLoading(false);
-    }
-  };
-
   return (
     <MainLayout>
-      <section className="section" id="register" style={{ minHeight: 'calc(100vh - 120px)', display: 'flex', alignItems: 'center' }}>
+      <section className="section" id="register-choice" style={{ minHeight: 'calc(100vh - 120px)', display: 'flex', alignItems: 'center' }}>
         <div className="container center">
-          <div className="auth-card animate-fade-up" style={{ margin: '0 auto' }}>
-            <div className="auth-logo-wrap">
-              <img src={logoUrl} alt="Company Logo" style={{ height: '48px', objectFit: 'contain' }} />
+          <div className="auth-card animate-fade-up" style={{ margin: '0 auto', maxWidth: 500, padding: '40px 32px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', borderRadius: 16 }}>
+            <div className="auth-logo-wrap" style={{ marginBottom: 24, textAlign: 'center' }}>
+              <span className="auth-brand" style={{ fontWeight: 800, fontSize: '2rem', letterSpacing: 1, color: 'var(--primary)' }}>shnoor</span>
             </div>
-            <h2 className="auth-heading">Create an account</h2>
-            <p className="auth-sub-text">Join us today to manage your workforce</p>
-            {registerError && (
-              <div className="login-error" style={{ display: 'block' }}>
-                {registerError}
-              </div>
-            )}
-            <form id="register-form" onSubmit={handleRegister} noValidate>
-              <div className="form-group">
-                <label htmlFor="register-name">Full Name</label>
-                <input
-                  type="text"
-                  id="register-name"
-                  name="name"
-                  placeholder="John Doe"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="register-email">Email</label>
-                <input
-                  type="email"
-                  id="register-email"
-                  name="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label htmlFor="register-password">Password</label>
-                  <input
-                    type={formData.showPasswords ? 'text' : 'password'}
-                    id="register-password"
-                    name="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
+            <h2 className="auth-heading" style={{ fontSize: '1.8rem', fontWeight: 700, marginBottom: 12 }}>Join our platform</h2>
+            <p className="auth-sub-text" style={{ marginBottom: 32, fontSize: '1.1rem', color: '#64748b' }}>Choose your account type to get started</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <Link to="/register/admin" className="role-choice-card" style={{ 
+                textDecoration: 'none', 
+                padding: '24px', 
+                border: '2px solid #e2e8f0', 
+                borderRadius: 12, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 20, 
+                transition: 'all 0.3s ease',
+                backgroundColor: '#fff'
+              }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', fontSize: '1.5rem' }}>
+                  <i className="fas fa-user-shield"></i>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label htmlFor="register-confirm">Confirm Password</label>
-                  <input
-                    type={formData.showPasswords ? 'text' : 'password'}
-                    id="register-confirm"
-                    name="confirmPassword"
-                    placeholder="••••••••"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                  />
+                <div style={{ textAlign: 'left' }}>
+                  <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 700, fontSize: '1.2rem' }}>Platform Administrator</h3>
+                  <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.9rem', lineHeight: 1.4 }}>Manage the entire platform, companies, and global settings.</p>
                 </div>
-              </div>
-              <div className="form-group">
-                <label htmlFor="register-role">Register As</label>
-                <select 
-                  id="register-role" 
-                  name="role" 
-                  value={formData.role} 
-                  onChange={handleChange}
-                  style={{ width: '100%', padding: '12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '0.95rem' }}
-                >
-                  <option value="Employee">Employee</option>
-                  <option value="Manager">Manager</option>
-                </select>
-              </div>
-              <div className="form-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '-10px', marginBottom: '16px' }}>
-                <input
-                  type="checkbox"
-                  id="reg-show-pwd"
-                  checked={formData.showPasswords}
-                  onChange={(e) => setFormData({ ...formData, showPasswords: e.target.checked })}
-                  style={{ width: 'auto' }}
-                />
-                <label htmlFor="reg-show-pwd" style={{ margin: 0, fontSize: '0.85rem', cursor: 'pointer', color: '#64748b' }}>
-                  Show Passwords
-                </label>
-              </div>
-              <button type="submit" className="btn btn-solid btn-block" id="register-submit" disabled={registerLoading}>
-                {registerLoading ? 'Creating Account...' : 'Register'}
-              </button>
-            </form>
-            <p className="auth-foot-text">
+              </Link>
+
+              <Link to="/register/manager" className="role-choice-card" style={{ 
+                textDecoration: 'none', 
+                padding: '24px', 
+                border: '2px solid #e2e8f0', 
+                borderRadius: 12, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 20, 
+                transition: 'all 0.3s ease',
+                backgroundColor: '#fff'
+              }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', backgroundColor: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e', fontSize: '1.5rem' }}>
+                  <i className="fas fa-user-tie"></i>
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 700, fontSize: '1.2rem' }}>Team Manager</h3>
+                  <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.9rem', lineHeight: 1.4 }}>Lead your team, manage attendance, and start a 15-day free trial.</p>
+                </div>
+              </Link>
+            </div>
+
+            <p className="auth-foot-text" style={{ marginTop: 32, fontSize: '1rem' }}>
               Already have an account?{' '}
-              <Link to="/login" className="link-small">
+              <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>
                 Login
               </Link>
             </p>
           </div>
         </div>
       </section>
+      <style>{`
+        .role-choice-card:hover {
+          border-color: var(--primary) !important;
+          transform: translateY(-4px);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+      `}</style>
     </MainLayout>
   );
 };

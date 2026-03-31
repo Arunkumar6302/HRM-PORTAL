@@ -24,7 +24,10 @@ exports.getDashboardStats = async (req, res) => {
                 activeEmployees,
                 pendingLeaves,
                 todaysAttendance,
-                recentActivities: recentLeaves
+                recentActivities: recentLeaves,
+                trial_start_date: req.user.trial_start_date,
+                trial_end_date: req.user.trial_end_date,
+                status: req.user.status
             }
         });
     } catch (err) {

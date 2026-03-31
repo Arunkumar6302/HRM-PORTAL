@@ -60,9 +60,27 @@ const Header = () => {
           </nav>
 
           <div className="nav-right">
-            <Link to="/register" className="btn btn-outline" style={{ marginLeft: 'auto' }}>
-              Register
-            </Link>
+            <div className="nav-dropdown-wrapper" style={{ position: 'relative' }}>
+              <button className="btn btn-outline" style={{ marginLeft: 'auto' }}>
+                Register <i className="fas fa-chevron-down" style={{ fontSize: '0.7rem', marginLeft: 4 }}></i>
+              </button>
+              <div className="nav-dropdown-content">
+                <Link to="/register/admin" className="dropdown-item">
+                  <i className="fas fa-user-shield"></i>
+                  <div className="dropdown-item-text">
+                    <strong>Administrator</strong>
+                    <span>Manage platform & settings</span>
+                  </div>
+                </Link>
+                <Link to="/register/manager" className="dropdown-item">
+                  <i className="fas fa-user-tie"></i>
+                  <div className="dropdown-item-text">
+                    <strong>Manager</strong>
+                    <span>Team & Trial Access</span>
+                  </div>
+                </Link>
+              </div>
+            </div>
             <Link to="/login" className="btn btn-solid">
               Login
             </Link>

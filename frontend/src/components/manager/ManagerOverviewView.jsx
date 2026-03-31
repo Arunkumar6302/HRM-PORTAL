@@ -103,6 +103,37 @@ const ManagerOverviewView = () => {
 
   const validHolidays = data.holidays.filter(h => new Date(h.date) >= new Date()).sort((a,b) => new Date(a.date) - new Date(b.date));
 
+  // --- Trial Logic ---
+  const trialEndDate = data.trial_end_date || sessionStorage.getItem('shnoor_trial_end') || localStorage.getItem('shnoor_trial_end');
+  const userStatus = data.status || sessionStorage.getItem('shnoor_status') || localStorage.getItem('shnoor_status') || 'Active';
+  
+  let trialDaysLeft = null;
+  let trialStatusText = 'No Trial Active';
+  let trialStatusColor = '#64748b';
+  let isExpired = false;
+  let isDeactivated = userStatus === 'Inactive';
+
+  if (trialEndDate) {
+    const end = new Date(trialEndDate);
+    const now = new Date();
+    const diffTime = end - now;
+    trialDaysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (trialDaysLeft <= 0) {
+      isExpired = true;
+      trialDaysLeft = 0;
+      trialStatusText = 'Trial Expired';
+      trialStatusColor = '#ef4444';
+    } else if (trialDaysLeft <= 3) {
+      trialStatusText = 'Expiring Soon';
+      trialStatusColor = '#f59e0b';
+    } else {
+      trialStatusText = 'Active Trial';
+      trialStatusColor = '#10b981';
+    }
+  }
+  // --------------------
+
   return (
     <div className="view">
       <div className="page-header">
@@ -112,6 +143,84 @@ const ManagerOverviewView = () => {
 
       {loading && <div style={{ marginBottom: 20 }}>Loading dashboard data...</div>}
 
+      {/* Trial & Access Status Banner */}
+      {(trialEndDate || isDeactivated) && (
+        <div style={{ 
+          marginBottom: 24, 
+          padding: '16px 20px', 
+          backgroundColor: '#fff', 
+          borderRadius: 12, 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          border: `1px solid ${isDeactivated || isExpired ? '#ef4444' : trialStatusColor}40`,
+          borderLeft: `5px solid ${isDeactivated || isExpired ? '#ef4444' : trialStatusColor}`
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ 
+              width: 40, height: 40, borderRadius: '50%', 
+              backgroundColor: isDeactivated || isExpired ? '#fee2e2' : `${trialStatusColor}15`, 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: isDeactivated || isExpired ? '#ef4444' : trialStatusColor 
+            }}>
+              <i className={isDeactivated ? "fas fa-user-lock" : "fas fa-clock"}></i>
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, color: '#0f172a' }}>
+                {isDeactivated ? 'Account Deactivated' : (isExpired ? 'Trial Expired' : trialStatusText)}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                {isDeactivated ? 'Your access has been restricted by Admin.' : (isExpired ? 'Your access has been restricted.' : 'You have full access to all features během trialu.')}
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: isDeactivated || isExpired ? '#ef4444' : trialStatusColor }}>
+              {isExpired || isDeactivated ? '0' : trialDaysLeft} {trialDaysLeft === 1 ? 'Day' : 'Days'}
+            </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>
+              Remaining
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trial Expiry & deactivation Overlay Block */}
+      {(isExpired || isDeactivated) && (
+        <div style={{
+          position: 'relative',
+          marginBottom: 24,
+          padding: 32,
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: 16,
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '3rem', color: '#ef4444', marginBottom: 16 }}>
+            <i className={isDeactivated ? "fas fa-user-lock" : "fas fa-exclamation-triangle"}></i>
+          </div>
+          <h2 style={{ fontSize: '1.5rem', color: '#991b1b', marginBottom: 12 }}>
+            {isDeactivated ? 'Account Deactivated' : 'Subscription Required'}
+          </h2>
+          <p style={{ color: '#b91c1c', maxWidth: 600, margin: '0 auto 24px', lineHeight: 1.6 }}>
+            {isDeactivated ? 'You are no longer an active user. Please contact admin.' : 
+             'Your 15-day trial period has expired. To continue, please upgrade to a full plan.'}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+             {isDeactivated ? (
+               <button className="btn btn-solid" style={{ background: '#ef4444' }}>Contact Administrator</button>
+             ) : (
+               <>
+                 <button className="btn btn-solid">Upgrade Now</button>
+                 <button className="btn btn-outline">Contact Support</button>
+               </>
+             )}
+          </div>
+        </div>
+      )}
+
+      <div style={{ opacity: (isExpired || isDeactivated) ? 0.4 : 1, pointerEvents: (isExpired || isDeactivated) ? 'none' : 'auto' }}>
       {/* 1. Manager Information */}
       <div className="panel mb" style={{ marginBottom: 24, padding: 24, background: 'linear-gradient(135deg, #f8fafc, #ffffff)', borderLeft: '4px solid #4f46e5' }}>
         <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>Manager Profile</h2>
@@ -307,6 +416,7 @@ const ManagerOverviewView = () => {
          </div>
       </div>
 
+     </div>
     </div>
   );
 };

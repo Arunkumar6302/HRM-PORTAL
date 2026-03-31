@@ -34,3 +34,8 @@ export const deleteAdmin = async (id) => {
   const { data } = await api.delete(`/api/v1/auth/users/${id}`);
   return data;
 };
+
+export const updateManagerAccess = async (id, payload) => {
+  const { data } = await api.put(`/api/v1/auth/manager-access/${id}`, payload);
+  return data;
+};

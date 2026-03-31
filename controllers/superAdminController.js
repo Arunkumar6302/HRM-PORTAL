@@ -17,7 +17,9 @@ const sendTokenResponse = (user, statusCode, res) => {
             id: user.id || user.employee_id, 
             name: user.name || user.employee_name, 
             email: user.email, 
-            role: user.role 
+            role: user.role,
+            trial_start_date: user.trial_start_date,
+            trial_end_date: user.trial_end_date
         }
     });
 };
@@ -58,6 +60,11 @@ exports.login = async (req, res) => {
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
 
+        // Check for deactivation
+        if (user.status === 'Inactive') {
+            return res.status(403).json({ success: false, error: 'You are no longer an active user. Please contact admin.' });
+        }
+
         sendTokenResponse(user, 200, res);
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -69,7 +76,25 @@ exports.login = async (req, res) => {
 exports.register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        const user = await SuperAdmin.create({ name, email, password, role });
+        
+        let trial_start_date = null;
+        let trial_end_date = null;
+
+        // If an admin creates a manager, they get the 15-day trial
+        if (role === 'Manager') {
+            trial_start_date = new Date();
+            trial_end_date = new Date();
+            trial_end_date.setDate(trial_end_date.getDate() + 15);
+        }
+
+        const user = await SuperAdmin.create({ 
+            name, 
+            email, 
+            password, 
+            role,
+            trial_start_date,
+            trial_end_date
+        });
 
         // Send Welcome Email
         const message = `
@@ -84,10 +109,11 @@ exports.register = async (req, res) => {
                         <p style="margin: 5px 0;"><strong>Login Email:</strong> ${email}</p>
                         <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
                     </div>
+                    ${role === 'Manager' ? `<p style="color: #4f46e5; font-weight: bold;">Your account includes a 15-day free trial starting today.</p>` : ''}
                     <p>For security reasons, we strongly recommend that you change your password immediately after your first login.</p>
                     <p>Follow the link below to access the portal:</p>
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="http://localhost:5000/index.html#login" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to HRM Portal</a>
+                        <a href="http://localhost:5173/login" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to HRM Portal</a>
                     </div>
                     <p>If you have any questions, please contact the IT department.</p>
                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
@@ -106,6 +132,38 @@ exports.register = async (req, res) => {
         } catch (emailErr) {
             console.error(`Email could not be sent: ${emailErr.message}`);
         }
+
+        sendTokenResponse(user, 201, res);
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Public self-registration (for testing/initial setup)
+// @route   POST /api/v1/auth/register/public
+exports.registerPublic = async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+        // Default to Employee if no role provided or if not a special role
+        const assignedRole = role || 'Employee';
+
+        let trial_start_date = null;
+        let trial_end_date = null;
+
+        if (assignedRole === 'Manager') {
+            trial_start_date = new Date();
+            trial_end_date = new Date();
+            trial_end_date.setDate(trial_end_date.getDate() + 15);
+        }
+        
+        const user = await SuperAdmin.create({ 
+            name, 
+            email, 
+            password, 
+            role: assignedRole,
+            trial_start_date,
+            trial_end_date
+        });
 
         sendTokenResponse(user, 201, res);
     } catch (err) {
@@ -309,5 +367,29 @@ exports.resetPassword = async (req, res) => {
         });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Update Manager details (trial and status)
+// @route   PUT /api/v1/auth/manager-access/:id
+exports.updateManagerAccess = async (req, res) => {
+    try {
+        const { trial_start_date, trial_end_date, status } = req.body;
+        const manager = await SuperAdmin.findByPk(req.params.id);
+
+        if (!manager || manager.role !== 'Manager') {
+            return res.status(404).json({ success: false, error: 'Manager not found' });
+        }
+
+        const updates = {};
+        if (trial_start_date !== undefined) updates.trial_start_date = trial_start_date;
+        if (trial_end_date !== undefined) updates.trial_end_date = trial_end_date;
+        if (status !== undefined) updates.status = status;
+
+        await manager.update(updates);
+
+        res.status(200).json({ success: true, data: manager });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };

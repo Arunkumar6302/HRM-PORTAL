@@ -10,6 +10,7 @@ import AdminSuperAdminView from '../components/admin/AdminSuperAdminView';
 import AdminWebsiteView from '../components/admin/AdminWebsiteView';
 import AdminSystemView from '../components/admin/AdminSystemView';
 import AdminChatSupportView from '../components/admin/AdminChatSupportView';
+import AdminManagerAccessView from '../components/admin/AdminManagerAccessView';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const AdminDashboard = () => {
     () => [
       { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-th-large' },
       { id: 'companies', label: 'Companies', icon: 'fas fa-building' },
+      { id: 'manageraccess', label: 'Manager Trial & Access', icon: 'fas fa-user-lock' },
       { id: 'subscriptions', label: 'Subscriptions', icon: 'fas fa-credit-card' },
       { id: 'transactions', label: 'Transactions', icon: 'fas fa-file-invoice-dollar' },
       { id: 'offline', label: 'Offline Requests', icon: 'fas fa-download' },
@@ -79,6 +81,7 @@ const AdminDashboard = () => {
   const ViewComponent = {
     dashboard: AdminOverviewView,
     companies: AdminCompaniesView,
+    manageraccess: AdminManagerAccessView,
     subscriptions: AdminSubscriptionsView,
     transactions: AdminTransactionsView,
     offline: AdminOfflineView,
