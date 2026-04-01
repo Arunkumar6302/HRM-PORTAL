@@ -1,6 +1,10 @@
-const { Employee, Attendance, Leave, Asset, Payroll, Expense, Appreciation, CompanyPolicy, Offboarding, Payslip, Holiday, Letter, Notification } = require('../models');
+const { Employee, Attendance, Leave, Asset, Payroll, Expense, Appreciation, CompanyPolicy, Offboarding, Payslip, Holiday, Letter, Notification, AppreciationComment } = require('../models');
+const { sequelize } = require('../config/db');
 const fs = require('fs');
 const path = require('path');
+const { sendEmail } = require('../services/emailService');
+
+const DEFAULT_EMPLOYEE_PASSWORD = process.env.EMPLOYEE_DEFAULT_PASSWORD || 'Emp@1234';
 
 // DASHBOARD
 exports.getDashboardStats = async (req, res) => {
@@ -24,10 +28,7 @@ exports.getDashboardStats = async (req, res) => {
                 activeEmployees,
                 pendingLeaves,
                 todaysAttendance,
-                recentActivities: recentLeaves,
-                trial_start_date: req.user.trial_start_date,
-                trial_end_date: req.user.trial_end_date,
-                status: req.user.status
+                recentActivities: recentLeaves
             }
         });
     } catch (err) {
@@ -47,6 +48,11 @@ exports.createEmployee = async (req, res) => {
     try {
         const data = { ...req.body };
         if (!data.role) data.role = 'Employee';
+        // Manager-created employee accounts use a default password unless explicitly provided.
+        if (!data.password || !String(data.password).trim()) {
+            data.password = DEFAULT_EMPLOYEE_PASSWORD;
+        }
+
         if (req.user && req.user.role === 'Manager' && !data.manager_id) {
             let mgrEmp = await Employee.findOne({ where: { email: req.user.email } });
             if (!mgrEmp) {
@@ -61,8 +67,59 @@ exports.createEmployee = async (req, res) => {
             }
             data.manager_id = mgrEmp.employee_id;
         }
+
+        const plainPassword = data.password;
         const emp = await Employee.create(data);
-        res.status(201).json({ success: true, data: emp });
+
+        let emailSent = false;
+        let emailError = null;
+        try {
+            const employeeName = emp.employee_name || data.employee_name || 'Employee';
+            const message = `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #2563eb; color: white; padding: 20px; text-align: center;">
+                        <h1 style="margin: 0;">Welcome to HRM Portal</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p>Hello <strong>${employeeName}</strong>,</p>
+                        <p>Your employee account has been created by your manager.</p>
+                        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                            <p style="margin: 5px 0;"><strong>Login Email:</strong> ${emp.email}</p>
+                            <p style="margin: 5px 0;"><strong>Default Password:</strong> ${plainPassword}</p>
+                        </div>
+                        <p>Please log in and change your password as soon as possible.</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="http://localhost:5000/index.html#login" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to HRM Portal</a>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #777;">This is an automated message, please do not reply to this email.</p>
+                    </div>
+                </div>
+            `;
+
+            await sendEmail({
+                email: emp.email,
+                subject: 'Your HRM Employee Account Credentials',
+                html: message,
+                text: [
+                    'Welcome to HRM Portal',
+                    '',
+                    `Hello ${employeeName},`,
+                    'Your employee account has been created by your manager.',
+                    `Login Email: ${emp.email}`,
+                    `Default Password: ${plainPassword}`,
+                    '',
+                    'Please change your password after first login.',
+                    'Login URL: http://localhost:5000/index.html#login'
+                ].join('\n')
+            });
+            emailSent = true;
+        } catch (emailErr) {
+            console.error('[Manager] Failed to send employee credentials email:', emailErr.message);
+            emailError = emailErr.message;
+        }
+
+        res.status(201).json({ success: true, data: emp, defaultPasswordSent: true, emailSent, emailError });
     } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
 
@@ -146,10 +203,40 @@ exports.getLeaves = async (req, res) => {
 
 exports.updateLeave = async (req, res) => {
     try {
-        const leave = await Leave.findByPk(req.params.id);
+        const leave = await Leave.findByPk(req.params.id, { include: [Employee] });
         if(!leave) return res.status(404).json({ success: false, error: "Not found" });
+        
+        const oldStatus = leave.status;
         await leave.update(req.body);
         const rLeave = await Leave.findByPk(leave.leave_id, { include: [Employee] });
+
+        // NOTIFY EMPLOYEE IF STATUS CHANGED
+        if (req.body.status && req.body.status !== oldStatus) {
+            const emp = rLeave.Employee;
+            if (emp && emp.email) {
+                const message = `Your leave application (${rLeave.leave_type}) has been ${req.body.status}.`;
+                
+                await Notification.create({
+                    userId: emp.email.toLowerCase(),
+                    role: 'employee',
+                    message,
+                    type: 'LeaveStatus',
+                    senderRole: 'manager',
+                    senderEmail: req.user.email
+                });
+
+                if (global.globalNotificationService) {
+                    await global.globalNotificationService.sendGlobalNotification({
+                        senderRole: 'manager',
+                        senderEmail: req.user.email,
+                        recipientEmails: [emp.email],
+                        message,
+                        type: 'leave_status'
+                    });
+                }
+            }
+        }
+
         res.status(200).json({ success: true, data: rLeave });
     } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
@@ -261,17 +348,60 @@ exports.generatePayslip = async (req, res) => {
 // APPRECIATIONS
 exports.getAppreciations = async (req, res) => {
     try {
-        const list = await Appreciation.findAll({ include: [Employee] });
+        const list = await Appreciation.findAll({ 
+            include: [
+                { model: Employee, as: 'Recipient', attributes: ['employee_id', 'employee_name', 'designation'] },
+                { model: Employee, as: 'Sender', attributes: ['employee_id', 'employee_name', 'designation'] },
+                { model: AppreciationComment, attributes: ['comment_id', 'commenter_name', 'content', 'created_at'] }
+            ],
+            order: [['date', 'DESC']]
+        });
         res.status(200).json({ success: true, data: list });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
 
 exports.createAppreciation = async (req, res) => {
     try {
-        const emp = await Employee.findByPk(req.body.employee_id);
-        if (!emp) return res.status(400).json({ success: false, error: "Employee not found" });
+        const { employee_id, title, description } = req.body;
+        // If the sender is a Manager (SuperAdmin), they don't have an employee_id.
+        // We set sender_id to null to avoid ID collisions with the Employee table.
+        const sender_id = req.user.employee_id || null;
 
-        const app = await Appreciation.create(req.body);
+        const app = await Appreciation.create({
+            employee_id,
+            sender_id,
+            title,
+            description,
+            date: new Date()
+        });
+
+        // NOTIFY RECIPIENT
+        const emp = await Employee.findByPk(employee_id);
+        if (emp && emp.email) {
+            const message = `Manager ${req.user.employee_name} sent you a "${title}" badge!`;
+            
+            // Create in-app notification
+            await Notification.create({
+                userId: emp.email.toLowerCase(),
+                role: 'employee',
+                message,
+                type: 'Appreciation',
+                senderRole: 'manager',
+                senderEmail: req.user.email
+            });
+
+            // Trigger Real-time notification
+            if (global.globalNotificationService) {
+                await global.globalNotificationService.sendGlobalNotification({
+                    senderRole: 'manager',
+                    senderEmail: req.user.email,
+                    recipientEmails: [emp.email],
+                    message,
+                    type: 'appreciation'
+                });
+            }
+        }
+
         const rapp = await Appreciation.findByPk(app.appreciation_id, { include: [Employee] });
         res.status(201).json({ success: true, data: rapp });
     } catch (err) { res.status(400).json({ success: false, error: err.message }); }
@@ -402,6 +532,20 @@ exports.updateExpense = async (req, res) => {
         if(!ex) return res.status(404).json({ success: false, error: "Not found" });
         await ex.update(req.body);
         const rex = await Expense.findByPk(ex.expense_id, { include: [Employee] });
+        
+        // Notify Employee via Global Service (Real-time)
+        if (req.body.status && (req.body.status === 'Approved' || req.body.status === 'Rejected')) {
+            if (rex.Employee && rex.Employee.email && global.globalNotificationService) {
+                await global.globalNotificationService.sendGlobalNotification({
+                    senderRole: 'manager',
+                    senderEmail: req.user.email,
+                    recipientEmails: [rex.Employee.email.toLowerCase()],
+                    message: `Your expense claim for "${rex.title}" has been ${req.body.status}.`,
+                    type: 'expense_status_update'
+                });
+            }
+        }
+        
         res.status(200).json({ success: true, data: rex });
     } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
@@ -473,9 +617,11 @@ exports.sendLetter = async (req, res) => {
             return res.status(400).json({ success: false, error: "Please provide employee, title, and content" });
         }
 
-        // Letters are sent by Admins/Managers from SuperAdmin table
-        let managerId = req.user.id;
-        if (!managerId) return res.status(400).json({ success: false, error: "Manager profile required to send letter" });
+        // Managers are identified by their email in the Employee table
+        // Database enforces manager_id pointing to SuperAdmin table
+        const managerId = req.user.id;
+        console.log('Using SuperAdmin ID for letter sender:', managerId);
+
 
         let targetEmployeeIds = [];
         if (employee_id === 'all') {
@@ -488,18 +634,21 @@ exports.sendLetter = async (req, res) => {
                        !role.includes('admin') && 
                        !desig.includes('manager') && 
                        !desig.includes('admin') && 
-                       name !== 'shnoor manager';
+                       name !== 'shnoor manager' &&
+                       e.email !== req.user.email; // Don't send to self
             }).map(e => e.employee_id);
         } else {
             targetEmployeeIds = [employee_id];
         }
 
         if (targetEmployeeIds.length === 0) {
-             return res.status(400).json({ success: false, error: "No target employees found." });
+            return res.status(400).json({ success: false, error: "No target employees found." });
         }
 
         const sentLetters = [];
         for (const targetId of targetEmployeeIds) {
+            if (!targetId) continue;
+            
             const letter = await Letter.create({
                 title,
                 content,
@@ -513,29 +662,36 @@ exports.sendLetter = async (req, res) => {
             });
             
             if (rLetter && rLetter.Recipient && rLetter.Recipient.email) {
-                await Notification.create({
-                    userId: rLetter.Recipient.email.toLowerCase(),
-                    role: 'employee',
-                    message: `You have received a new letter: ${title}`,
-                    type: 'Letter'
-                });
-
-                // Emit real-time global notification
-                if (global.globalNotificationService) {
-                    await global.globalNotificationService.sendGlobalNotification({
-                        senderRole: 'manager',
-                        senderEmail: req.user.email,
-                        message: `Letter Sent: ${title}`,
-                        type: 'Letter',
-                        recipientEmails: [rLetter.Recipient.email]
+                try {
+                    await Notification.create({
+                        userId: rLetter.Recipient.email.toLowerCase(),
+                        role: 'employee',
+                        message: `You have received a new letter: ${title}`,
+                        type: 'Letter'
                     });
+
+                    // Emit real-time global notification
+                    if (global.globalNotificationService) {
+                        await global.globalNotificationService.sendGlobalNotification({
+                            senderRole: 'manager',
+                            senderEmail: req.user.email,
+                            message: `Letter Sent: ${title}`,
+                            type: 'Letter',
+                            recipientEmails: [rLetter.Recipient.email]
+                        });
+                    }
+                } catch (notifErr) {
+                    console.error('Non-critical notification error:', notifErr);
                 }
             }
             sentLetters.push(rLetter);
         }
 
         res.status(201).json({ success: true, data: sentLetters[0], all_sent: sentLetters.length });
-    } catch (err) { res.status(400).json({ success: false, error: err.message }); }
+    } catch (err) { 
+        console.error('Critical Letter Save Error:', err);
+        res.status(400).json({ success: false, error: err.message }); 
+    }
 };
 
 exports.updateLetter = async (req, res) => {
